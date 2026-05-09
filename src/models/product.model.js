@@ -13,7 +13,7 @@ const Product = sequelize.define('Product', {
   },
   sku: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true,
   },
   quantity: {
@@ -43,6 +43,10 @@ const Product = sequelize.define('Product', {
   stockStatus: {
     type: DataTypes.STRING,
     defaultValue: 'in_stock', // in_stock, low_stock, out_of_stock
+  },
+  receivedDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
   },
 }, {
   timestamps: true,

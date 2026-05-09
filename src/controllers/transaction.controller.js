@@ -50,7 +50,7 @@ exports.createTransaction = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Insufficient stock' });
     }
 
-    const stockStatus = newQuantity === 0 ? 'out_of_stock' : newQuantity <= product.lowStockThreshold ? 'low_stock' : 'in_stock';
+    const stockStatus = newQuantity === 0 ? 'out_of_stock' : newQuantity < product.lowStockThreshold ? 'low_stock' : 'in_stock';
 
     const transaction = await Transaction.create({
       productId,

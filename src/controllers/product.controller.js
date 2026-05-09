@@ -87,6 +87,8 @@ exports.createProduct = async (req, res, next) => {
       description,
       imageUrl,
       lowStockThreshold,
+      receivedBy,
+      receivedDate,
     } = req.body;
 
     if (!categoryId) {
@@ -95,7 +97,7 @@ exports.createProduct = async (req, res, next) => {
 
     const qty = parseInt(quantity) || 0;
     const threshold = parseInt(lowStockThreshold) || 10;
-    const stockStatus = qty === 0 ? 'out_of_stock' : qty <= threshold ? 'low_stock' : 'in_stock';
+    const stockStatus = qty === 0 ? 'out_of_stock' : qty < threshold ? 'low_stock' : 'in_stock';
 
     const product = await Product.create({
       name,
@@ -109,6 +111,7 @@ exports.createProduct = async (req, res, next) => {
       imageUrl,
       lowStockThreshold: threshold,
       stockStatus,
+      receivedDate: receivedDate || null,
     }, { transaction: t });
 
     // Log transaction
@@ -118,6 +121,7 @@ exports.createProduct = async (req, res, next) => {
       type: 'STOCK_IN',
       userId: req.user.id,
       notes: 'Initial stock',
+      receivedBy: receivedBy || null,
     }, { transaction: t });
 
     await t.commit();
@@ -141,6 +145,7 @@ exports.updateProduct = async (req, res, next) => {
       description,
       imageUrl,
       lowStockThreshold,
+      receivedDate,
     } = req.body;
 
     const product = await Product.findByPk(req.params.id);
@@ -150,7 +155,7 @@ exports.updateProduct = async (req, res, next) => {
 
     const newQuantity = quantity !== undefined ? parseInt(quantity) : product.quantity;
     const threshold = lowStockThreshold !== undefined ? parseInt(lowStockThreshold) : product.lowStockThreshold;
-    const stockStatus = newQuantity === 0 ? 'out_of_stock' : newQuantity <= threshold ? 'low_stock' : 'in_stock';
+    const stockStatus = newQuantity === 0 ? 'out_of_stock' : newQuantity < threshold ? 'low_stock' : 'in_stock';
 
     await product.update({
       name,
@@ -164,6 +169,7 @@ exports.updateProduct = async (req, res, next) => {
       imageUrl,
       lowStockThreshold: threshold,
       stockStatus,
+      receivedDate: receivedDate !== undefined ? (receivedDate || null) : product.receivedDate,
     });
 
     res.json({ success: true, data: product });

@@ -19,6 +19,10 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  receivedBy: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   updatedAt: false,   // DB table only has createdAt
