@@ -39,11 +39,16 @@ exports.createUser = async (req, res, next) => {
     const invitationUrl = `${process.env.FRONTEND_URL}/set-password/${invitationToken}`;
     const message = `Hello ${name},\n\nYou have been invited to the Inventory Management System. Please set your password using the link below:\n\n${invitationUrl}`;
 
-    await sendEmail({
-      email,
-      subject: 'Invitation to Inventory System',
-      message,
-    });
+    try {
+      await sendEmail({
+        email,
+        subject: 'Invitation to Inventory System',
+        message,
+      });
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError.message);
+      // We still want to return success since the user was created.
+    }
 
     res.status(201).json({ success: true, data: user });
   } catch (error) {
