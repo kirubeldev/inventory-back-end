@@ -18,7 +18,7 @@ const connectDB = async () => {
     console.log('Sequelize: Database connection has been established successfully.');
     
     // Sync models
-    // await sequelize.sync({ alter: true }); // Careful with this in production
+    await sequelize.sync({ alter: true }); // Careful with this in production
   } catch (error) {
     console.error('Sequelize: Unable to connect to the database:', error);
   }

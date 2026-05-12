@@ -11,7 +11,7 @@ exports.getProducts = async (req, res, next) => {
     if (search) {
       where[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
-        { sku: { [Op.iLike]: `%${search}%` } },
+        { code: { [Op.iLike]: `%${search}%` } },
       ];
     }
     if (category) where.categoryId = category;
@@ -78,7 +78,7 @@ exports.createProduct = async (req, res, next) => {
   try {
     const {
       name,
-      sku,
+      code,
       categoryId,
       supplierId,
       quantity,
@@ -101,7 +101,7 @@ exports.createProduct = async (req, res, next) => {
 
     const product = await Product.create({
       name,
-      sku,
+      code,
       categoryId,
       supplierId: supplierId || null,
       quantity: qty,
@@ -136,7 +136,7 @@ exports.updateProduct = async (req, res, next) => {
   try {
     const {
       name,
-      sku,
+      code,
       categoryId,
       supplierId,
       quantity,
@@ -159,7 +159,7 @@ exports.updateProduct = async (req, res, next) => {
 
     await product.update({
       name,
-      sku,
+      code,
       categoryId,
       supplierId: supplierId || null,
       quantity: newQuantity,

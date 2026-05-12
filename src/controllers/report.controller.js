@@ -159,3 +159,91 @@ exports.getInventoryReport = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getStockOutReport = async (req, res, next) => {
+  try {
+    const transactions = await Transaction.findAll({
+      where: { type: 'STOCK_OUT' },
+      include: [
+        { 
+          model: Product, 
+          as: 'product',
+          include: [{ model: Category, as: 'category' }]
+        },
+        { model: User, as: 'user', attributes: ['name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    const data = transactions.map(t => ({
+      id: t.id,
+      date: t.createdAt,
+      personName: t.user?.name || '—',
+      productName: t.product?.name || '—',
+      code: t.product?.code || '—',
+      category: t.product?.category?.name || '—',
+      quantity: t.quantity,
+      balance: t.product?.quantity || 0,
+      unitPrice: t.product?.sellingPrice || 0,
+      totalCategory: (parseFloat(t.product?.sellingPrice || 0) * t.quantity).toFixed(2),
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getStatsData = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const where = {};
+    if (startDate && endDate && startDate !== 'undefined' && endDate !== 'undefined') {
+      where.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    const transactions = await Transaction.findAll({
+      where,
+      include: [{ model: Product, as: 'product' }],
+      order: [['createdAt', 'ASC']]
+    });
+
+    // Group by month
+    const statsMap = {};
+    transactions.forEach(t => {
+      const date = new Date(t.createdAt);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!statsMap[monthYear]) {
+        statsMap[monthYear] = { month: monthYear, cost: 0, profit: 0, sales: 0 };
+      }
+
+      const cost = parseFloat(t.product?.costPrice || 0) * t.quantity;
+      const selling = parseFloat(t.product?.sellingPrice || 0) * t.quantity;
+
+      if (t.type === 'STOCK_OUT') {
+        statsMap[monthYear].sales += selling;
+        statsMap[monthYear].cost += cost;
+        statsMap[monthYear].profit += (selling - cost);
+      }
+    });
+
+    const chartData = Object.values(statsMap);
+    
+    // Also return items list for the range
+    const itemsList = transactions.filter(t => t.type === 'STOCK_OUT').map(t => ({
+      name: t.product?.name,
+      code: t.product?.code,
+      quantity: t.quantity,
+      cost: (parseFloat(t.product?.costPrice || 0) * t.quantity).toFixed(2),
+      profit: ((parseFloat(t.product?.sellingPrice || 0) - parseFloat(t.product?.costPrice || 0)) * t.quantity).toFixed(2),
+      date: t.createdAt
+    }));
+
+    res.json({ success: true, data: { chartData, itemsList } });
+  } catch (error) {
+    next(error);
+  }
+};

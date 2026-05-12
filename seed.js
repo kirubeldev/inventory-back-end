@@ -7,7 +7,9 @@ const {
   Transaction, 
   Order, 
   OrderItem, 
-  AuditLog 
+  AuditLog,
+  User,
+  Role
 } = require('./src/models');
 
 async function seed() {
@@ -45,11 +47,11 @@ async function seed() {
     const [techData, officeMax, ikea] = suppliers;
 
     console.log('Seeding Products...');
-    await Product.bulkCreate([
+    const products = await Product.bulkCreate([
       // Out of Stock items
       { 
         name: 'Wireless Mouse', 
-        sku: 'ELEC-MOU-001', 
+        code: 'ELEC-MOU-001', 
         description: 'Ergonomic wireless mouse',
         sellingPrice: 25.99,
         costPrice: 15.00,
@@ -61,7 +63,7 @@ async function seed() {
       },
       { 
         name: 'Mechanical Keyboard', 
-        sku: 'ELEC-KBD-002', 
+        code: 'ELEC-KBD-002', 
         description: 'RGB mechanical keyboard with blue switches',
         sellingPrice: 89.99,
         costPrice: 50.00,
@@ -75,7 +77,7 @@ async function seed() {
       // Low Stock items
       { 
         name: 'Standing Desk', 
-        sku: 'FURN-DSK-001', 
+        code: 'FURN-DSK-001', 
         description: 'Adjustable standing desk',
         sellingPrice: 350.00,
         costPrice: 200.00,
@@ -87,7 +89,7 @@ async function seed() {
       },
       { 
         name: 'Printer Paper (Ream)', 
-        sku: 'OFF-PAP-001', 
+        code: 'OFF-PAP-001', 
         description: 'A4 white printer paper',
         sellingPrice: 5.99,
         costPrice: 2.50,
@@ -99,7 +101,7 @@ async function seed() {
       },
       { 
         name: 'Coffee Beans (1kg)', 
-        sku: 'BRK-COF-001', 
+        code: 'BRK-COF-001', 
         description: 'Dark roast espresso beans',
         sellingPrice: 18.50,
         costPrice: 10.00,
@@ -113,7 +115,7 @@ async function seed() {
       // Normal Stock items
       { 
         name: '27-inch Monitor', 
-        sku: 'ELEC-MON-001', 
+        code: 'ELEC-MON-001', 
         description: '4K IPS Monitor',
         sellingPrice: 299.99,
         costPrice: 210.00,
@@ -125,7 +127,7 @@ async function seed() {
       },
       { 
         name: 'Ergonomic Chair', 
-        sku: 'FURN-CHR-001', 
+        code: 'FURN-CHR-001', 
         description: 'Mesh office chair with lumbar support',
         sellingPrice: 150.00,
         costPrice: 85.00,
@@ -137,7 +139,7 @@ async function seed() {
       },
       { 
         name: 'Blue Ink Pens (Box of 50)', 
-        sku: 'OFF-PEN-001', 
+        code: 'OFF-PEN-001', 
         description: 'Smooth writing blue ballpoint pens',
         sellingPrice: 12.00,
         costPrice: 4.00,
@@ -149,7 +151,7 @@ async function seed() {
       },
       { 
         name: 'USB-C Cable (2m)', 
-        sku: 'ELEC-CBL-001', 
+        code: 'ELEC-CBL-001', 
         description: 'Braided fast charging cable',
         sellingPrice: 15.99,
         costPrice: 5.00,
@@ -161,7 +163,7 @@ async function seed() {
       },
       { 
         name: 'Whiteboard Markers', 
-        sku: 'OFF-MRK-001', 
+        code: 'OFF-MRK-001', 
         description: 'Dry erase markers, assorted colors',
         sellingPrice: 8.50,
         costPrice: 3.50,
@@ -171,7 +173,39 @@ async function seed() {
         categoryId: officeSupplies.id,
         supplierId: officeMax.id
       }
-    ]);
+    ], { returning: true });
+
+    console.log('Seeding Transactions...');
+    const allProductsInDb = await Product.findAll();
+    // Correct way to find Admin user
+    const adminUser = await User.findOne({ 
+      include: [{ model: Role, as: 'role', where: { name: 'Admin' } }] 
+    });
+
+    if (adminUser) {
+      const transactions = [];
+      const months = 6;
+      for (let i = 0; i < months; i++) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        
+        // Add 3-5 transactions per month
+        const count = Math.floor(Math.random() * 3) + 3;
+        for (let j = 0; j < count; j++) {
+          const product = allProductsInDb[Math.floor(Math.random() * allProductsInDb.length)];
+          transactions.push({
+            productId: product.id,
+            userId: adminUser.id,
+            type: 'STOCK_OUT',
+            quantity: Math.floor(Math.random() * 5) + 1,
+            notes: 'Monthly sale data',
+            createdAt: date,
+            updatedAt: date
+          });
+        }
+      }
+      await Transaction.bulkCreate(transactions);
+    }
 
     console.log('Seeding completed successfully!');
     process.exit(0);
